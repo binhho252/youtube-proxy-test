@@ -1,18 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ProxyService } from './proxy.service';
-import * as ytdl from 'ytdl-core';
-
+// youtube.service.ts
 @Injectable()
 export class YoutubeService {
-  private readonly logger = new Logger(YoutubeService.name);
-
-  constructor(private proxyService: ProxyService) {}
-
   async getVideoInfo(videoUrl: string) {
     const proxyConfig = this.proxyService.getRandomProxy();
     const startTime = Date.now();
     
     try {
+      // Không có retry, để lộ ra nguyên nhân thực sự
       const info = await ytdl.getBasicInfo(videoUrl, {
         requestOptions: this.proxyService.getProxyRequestConfig(proxyConfig)
       });
@@ -31,15 +25,22 @@ export class YoutubeService {
 
       return info;
     } catch (error) {
+      // Log chi tiết lỗi để phân tích
       await this.proxyService.logRequest({
         videoUrl,
         proxyInstance: proxyConfig.host,
         status: error.statusCode || 500,
-        errorMessage: error.message,
+        errorMessage: JSON.stringify({
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+          code: error.code
+        }),
         responseTime: Date.now() - startTime,
         proxyConfig
       });
       
+      // Throw nguyên error để caller có thể phân tích
       throw error;
     }
   }
