@@ -1,16 +1,20 @@
+import { Injectable } from '@nestjs/common';
+import ytdl from 'ytdl-core';
+
 // youtube.service.ts
 @Injectable()
 export class YoutubeService {
+  proxyService: any;
   async getVideoInfo(videoUrl: string) {
     const proxyConfig = this.proxyService.getRandomProxy();
     const startTime = Date.now();
-    
+
     try {
       // Không có retry, để lộ ra nguyên nhân thực sự
       const info = await ytdl.getBasicInfo(videoUrl, {
-        requestOptions: this.proxyService.getProxyRequestConfig(proxyConfig)
+        requestOptions: this.proxyService.getProxyRequestConfig(proxyConfig),
       });
-      
+
       await this.proxyService.logRequest({
         videoUrl,
         proxyInstance: proxyConfig.host,
@@ -19,8 +23,8 @@ export class YoutubeService {
         proxyConfig,
         responseData: {
           title: info.videoDetails.title,
-          duration: info.videoDetails.lengthSeconds
-        }
+          duration: info.videoDetails.lengthSeconds,
+        },
       });
 
       return info;
@@ -34,13 +38,14 @@ export class YoutubeService {
           message: error.message,
           stack: error.stack,
           name: error.name,
-          code: error.code
+          code: error.code,
         }),
         responseTime: Date.now() - startTime,
-        proxyConfig
+        proxyConfig,
       });
-      
+
       // Throw nguyên error để caller có thể phân tích
+      // eslint-disable-next-line prettier/prettier
       throw error;
     }
   }
